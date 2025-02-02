@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Hash;
 
 class Member extends Model
 {
@@ -28,12 +29,16 @@ class Member extends Model
             }
         });
     }
+    public function setPasswordAttribute($value)
+    {
+        $this->attributes['password'] = Hash::make($value);
+    }
 
     public function attendances()
     {
         return $this->hasMany(Attendance::class, 'member_id');
     }
-    public function attendance_requests()
+    public function attendanceRequests()
     {
         return $this->hasMany(AttendanceRequest::class, 'member_id');
     }
