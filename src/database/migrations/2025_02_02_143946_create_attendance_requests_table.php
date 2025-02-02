@@ -18,7 +18,7 @@ return new class extends Migration
             $table->enum('request_type', ['修正', '申請'])->default('修正');
             $table->time('requested_clock_in');
             $table->time('requested_clock_end');
-            $table->string('requested_remarks');
+            $table->string('requested_remarks', 255);
             $table->enum('status', ['承認待ち', '承認済み'])->default('承認待ち');
             $table->foreignId('admin_id')->constrained()->cascadeOnDelete();
             $table->timestamps('approved_at');
