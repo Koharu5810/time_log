@@ -11,11 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('break_times', function (Blueprint $table) {
+        Schema::create('attendance_requests', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('attendance_id')->constrained()->cascadeOnDelete();
-            $table->time('break_time_start');
-            $table->time('break_time_end');
             $table->timestamps();
         });
     }
@@ -25,6 +22,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('break_times');
+        Schema::dropIfExists('attendance_requests');
     }
 };
