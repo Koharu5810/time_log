@@ -24,8 +24,11 @@ class BreakTime extends Model
     // 休憩時間の計算
     public function getDurationInMinutesAttribute()
     {
-        $start = Carbon::parse($this->break_time_start);
-        $end = Carbon::parse($this->break_time_end);
-        return $start->diffInMinutes($end);
+        if ($this->break_time_start && $this->break_time_end) {
+            $start = Carbon::parse($this->break_time_start);
+            $end = Carbon::parse($this->break_time_end);
+            return $start->diffInMinutes($end);
+        }
+        return 0; // 両方の値が揃っていない場合は0を返す
     }
 }
