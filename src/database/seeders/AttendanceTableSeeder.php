@@ -19,12 +19,14 @@ class AttendanceTableSeeder extends Seeder
     {
         $statusMap = [
             1 => '勤務外',
-            2 => '出勤中',              // 通常の出勤
+            2 => '出勤中',              // 出勤中（未休憩）
             3 => '休憩中',              // 1回目の休憩中
             4 => '出勤中',              // 1回目の休憩後の出勤中
             5 => '休憩中',              // 2回目の休憩中
             6 => '出勤中',              // 2回目の休憩後の出勤中
-            7 => '退勤済',              // 退勤済み
+            7 => '退勤済',              // 休憩なしで退勤済
+            8 => '退勤済',              // 1回の休憩後、退勤済
+            9 => '退勤済',              // 2回の休憩後、退勤済
         ];
 
         foreach ($statusMap as $memberId => $status) {
@@ -86,8 +88,18 @@ class AttendanceTableSeeder extends Seeder
                     // 2回目の休憩後の出勤中
                     $break1 = $this->startBreakTime($attendance, $clockIn, '1回目の休憩中');
                     $this->endBreakTime($attendance, $break1);
+
+                    $attendance->update([
+                        'status' => '出勤中',
+                        'remarks' => '1回目の休憩後出勤中ダミーデータ'
+                    ]);
+
                     $break2 = $this->startBreakTime($attendance, $break1->break_time_end, '2回目の休憩中');
                     $this->endBreakTime($attendance, $break2);
+                    $attendance->update([
+                        'status' => '出勤中',
+                        'remarks' => '2回目の休憩後出勤ダミーデータ'
+                    ]);
                     break;
 
                 case 7:
@@ -107,7 +119,7 @@ class AttendanceTableSeeder extends Seeder
                     ]);
 
                     $workDuration = rand(300, 540); // 5〜9時間
-                    $this->safeClockOut($attendance, $clockIn, $workDuration);
+                    $this->safeClockOut($attendance, $attendance->clock_in, $workDuration);
                     break;
 
                 case 9:
@@ -129,7 +141,7 @@ class AttendanceTableSeeder extends Seeder
                     ]);
 
                     $workDuration = rand(480, 600); // 8〜10時間
-                    $this->safeClockOut($attendance, $clockIn, $workDuration);
+                    $this->safeClockOut($attendance, $attendance->clock_in, $workDuration);
                     break;
             }
         }
@@ -166,10 +178,14 @@ class AttendanceTableSeeder extends Seeder
             'break_time_end' => $breakEnd->format('H:i:s')
         ]);
 
-        $attendance->update([
-            'status' => '出勤中',
-            'remarks' => '休憩後出勤ダミーデータ'
-        ]);
+        // 既に「1回目の休憩後出勤ダミーデータ」がある場合は上書きしない
+        $currentRemarks = $attendance->remarks;
+        if (strpos($currentRemarks, '休憩後出勤') === false) {
+            $attendance->update([
+                'status' => '出勤中',
+                'remarks' => '休憩後出勤ダミーデータ'
+            ]);
+        }
     }
 
     // 出勤中のときのみ退勤可
@@ -178,6 +194,13 @@ class AttendanceTableSeeder extends Seeder
         if ($attendance->status !== '出勤中') {
             // 出勤中以外の場合は退勤できない
             throw new Exception("メンバーID {$attendance->member_id} は「出勤中」ではないため退勤できません。");
+        }
+
+        // clockInがnullでないか確認し、Carbonインスタンスに変換
+        if (is_string($clockIn)) {
+            $clockIn = Carbon::parse($clockIn);
+        } elseif (is_null($clockIn)) {
+            $clockIn = Carbon::parse($attendance->clock_in);
         }
 
         $clockOut = (clone $clockIn)->addMinutes($workDuration);
