@@ -19,12 +19,12 @@ class AttendanceTableSeeder extends Seeder
 
         foreach ($members as $member) {
             // 各IDに対して異なる勤務状況を作成
-            $this->createAttendance($member->id, 1, '勤務外', 0);         // ID1: 勤務前
-            $this->createAttendance($member->id, 2, '出勤中', 180);      // ID2: 勤務中（休憩前）
-            $this->createBreakTimeStatus($member->id, 3, '休憩中', 240); // ID3: 休憩中
-            $this->createAttendance($member->id, 4, '出勤中', 300);      // ID4: 勤務中（休憩後）
-            $this->createBreakTimeStatus($member->id, 5, '休憩中', 420); // ID5: 2回目の休憩中
-            $this->createAttendance($member->id, 6, '退勤済', 480);      // ID6: 勤務外（勤務時間8時間）
+            $this->createAttendance($member->id, '勤務外', 0);         // 勤務前
+            $this->createAttendance($member->id, '出勤中', 180);      // 勤務中（休憩前）
+            $this->createBreakTimeStatus($member->id, '休憩中', 240); // 休憩中
+            $this->createAttendance($member->id, '出勤中', 300);      // 勤務中（休憩後）
+            $this->createBreakTimeStatus($member->id, '休憩中', 420); // 2回目の休憩中
+            $this->createAttendance($member->id, '退勤済', 480);      // 勤務外（勤務時間8時間）
 
             for ($i = 7; $i <= 10; $i++) {
                 $this->createRandomAttendance($member->id, $i);
@@ -32,14 +32,13 @@ class AttendanceTableSeeder extends Seeder
         }
     }
 
-    private function createAttendance($memberId, $id, $status, $workMinutes)
+    private function createAttendance($memberId, $status, $workMinutes)
     {
         $workDate = Carbon::now()->subDays(1);
         $clockIn = $workMinutes > 0 ? Carbon::createFromTime(9, 0) : null;
         $clockEnd = $clockIn ? (clone $clockIn)->addMinutes($workMinutes) : null;
 
         $attendance = Attendance::create([
-            'id' => $id,
             'member_id' => $memberId,
             'work_date' => $workDate->format('Y-m-d'),
             'clock_in' => $clockIn ? $clockIn->format('H:i:s') : null,
@@ -51,9 +50,9 @@ class AttendanceTableSeeder extends Seeder
         return $attendance;
     }
 
-    private function createBreakTimeStatus($memberId, $id, $status, $elapsedMinutes)
+    private function createBreakTimeStatus($memberId, $status, $elapsedMinutes)
     {
-        $attendance = $this->createAttendance($memberId, $id, $status, $elapsedMinutes);
+        $attendance = $this->createAttendance($memberId, $status, $elapsedMinutes);
 
         if ($attendance->clock_in) {
             $breakStart = Carbon::parse($attendance->clock_in)->addMinutes($elapsedMinutes - 30);
@@ -74,11 +73,11 @@ class AttendanceTableSeeder extends Seeder
 
     private function createRandomAttendance($memberId, $id)
     {
-        $statuses = ['勤務外', '勤務中', '休憩中', '退勤済']; // ランダムなステータス
+        $statuses = ['勤務外', '出勤中', '休憩中', '退勤済']; // ランダムなステータス
         $status = $statuses[array_rand($statuses)];
         $workMinutes = $status === '勤務外' ? 0 : rand(1, 480); // 勤務外は0分、それ以外は1〜480分
 
-        $attendance = $this->createAttendance($memberId, $id, $status, $workMinutes);
+        $attendance = $this->createAttendance($memberId, $status, $workMinutes);
 
         if ($status === '休憩中' && $attendance->clock_in) {
             // 休憩中の場合は休憩時間も作成

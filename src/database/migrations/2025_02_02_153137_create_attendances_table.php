@@ -15,9 +15,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('member_id')->constrained()->cascadeOnDelete();
             $table->date('work_date');
-            $table->time('clock_in');
-            $table->time('clock_end');
-            $table->enum('status', ['勤務外', '出勤中', '休憩中', '退勤済み'])->default('勤務外');
+            $table->time('clock_in')->nullable();
+            $table->time('clock_end')->nullable();
+            $table->enum('status', ['勤務外', '出勤中', '休憩中', '退勤済'])->default('勤務外');
             $table->string('remarks', 255);
             $table->timestamps();
         });
