@@ -19,11 +19,12 @@ class AttendanceTableSeeder extends Seeder
         $members = Member::all(); // 既存のメンバーを取得
 
         foreach ($members as $member) {
-            for ($i = 0; $i < 10; $i++) { // 各メンバーに対して10日分のデータを作成
+            for ($i = 0; $i < 2; $i++) { // 各メンバーに対して2日分のデータを作成
                 $workDate = Carbon::now()->subDays($i);
                 $clockIn = Carbon::createFromTime(rand(8, 10), rand(0, 59));
                 $clockEnd = (clone $clockIn)->addHours(rand(7, 9))->addMinutes(rand(0, 59));
 
+                // 初期値：勤務外
                 $attendance = Attendance::create([
                     'member_id' => $member->id,
                     'work_date' => $workDate->format('Y-m-d'),
@@ -33,11 +34,57 @@ class AttendanceTableSeeder extends Seeder
                     'remarks' => 'ダミーデータ',
                 ]);
 
-                // 休憩時間も作成
-                $breakCount = rand(1, 3);
-                $this->createBreakTimes($attendance, $breakCount);
+                if ($i === 0) {
+                    // 1日目: 勤務前 → 出勤中 → 休憩中 → 出勤中 のシナリオ
+                    $this->simulateWorkDay($attendance);
+                } else {
+                    // 2日目: 通常の勤務と休憩の生成
+                    $breakCount = rand(1, 3);
+                    $this->createBreakTimes($attendance, $breakCount);
+                }
             }
         }
+    }
+
+
+    private function simulateWorkDay($attendance)
+    {
+        $workStart = Carbon::parse($attendance->clock_in);
+        $workEnd = Carbon::parse($attendance->clock_end);
+
+        // 勤務開始（ステータス変更: 出勤中）
+        $attendance->update([
+            'status' => '出勤中',
+            'remarks' => '勤務開始',
+        ]);
+
+        // 休憩開始
+        $breakStart = (clone $workStart)->addHours(3);
+        $breakEnd = (clone $breakStart)->addMinutes(45); // 45分の休憩
+
+        BreakTime::create([
+            'attendance_id' => $attendance->id,
+            'break_time_start' => $breakStart->format('H:i:s'),
+            'break_time_end' => $breakEnd->format('H:i:s'),
+        ]);
+
+        // 休憩中（ステータス変更）
+        $attendance->update([
+            'status' => '休憩中',
+            'remarks' => '休憩中',
+        ]);
+
+        // 休憩終了後、再び勤務中へ
+        $attendance->update([
+            'status' => '出勤中',
+            'remarks' => '休憩終了後の勤務中',
+        ]);
+
+        // 勤務終了（退勤済み）
+        $attendance->update([
+            'status' => '退勤済み',
+            'remarks' => '勤務終了',
+        ]);
     }
 
     private function createBreakTimes($attendance, $breakCount)
@@ -58,14 +105,9 @@ class AttendanceTableSeeder extends Seeder
                 ]);
 
                 // 休憩開始時にステータスを「休憩中」に変更
-                $attendance->update([
-                    'status' => '休憩中',
-                ]);
-
+                $attendance->update(['status' => '休憩中']);
                 // 休憩終了後に再度「出勤中」に戻す
-                $attendance->update([
-                    'status' => '出勤中',
-                ]);
+                $attendance->update(['status' => '出勤中']);
             }
         }
 
