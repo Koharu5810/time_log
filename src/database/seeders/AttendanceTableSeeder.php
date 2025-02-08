@@ -7,6 +7,8 @@ use App\Models\Attendance;
 use App\Models\BreakTime;
 use App\Models\Member;
 use Carbon\Carbon;
+use Exception;
+use Illuminate\Support\Facades\DB;
 
 class AttendanceTableSeeder extends Seeder
 {
@@ -15,85 +17,174 @@ class AttendanceTableSeeder extends Seeder
      */
     public function run(): void
     {
-        $members = Member::all(); // 既存のメンバーを取得
+        $statusMap = [
+            1 => '勤務外',
+            2 => '出勤中',              // 通常の出勤
+            3 => '休憩中',              // 1回目の休憩中
+            4 => '出勤中',              // 1回目の休憩後の出勤中
+            5 => '休憩中',              // 2回目の休憩中
+            6 => '出勤中',              // 2回目の休憩後の出勤中
+            7 => '退勤済',              // 退勤済み
+        ];
 
-        foreach ($members as $member) {
-            // 各IDに対して異なる勤務状況を作成
-            $this->createAttendance($member->id, '勤務外', 0);         // 勤務前
-            $this->createAttendance($member->id, '出勤中', 180);      // 勤務中（休憩前）
-            $this->createBreakTimeStatus($member->id, '休憩中', 240); // 休憩中
-            $this->createAttendance($member->id, '出勤中', 300);      // 勤務中（休憩後）
-            $this->createBreakTimeStatus($member->id, '休憩中', 420); // 2回目の休憩中
-            $this->createAttendance($member->id, '退勤済', 480);      // 勤務外（勤務時間8時間）
+        foreach ($statusMap as $memberId => $status) {
+            $workDate = Carbon::now()->subDays(rand(0, 3))->format('Y-m-d');  // 過去3日間のランダムな日付
 
-            for ($i = 7; $i <= 10; $i++) {
-                $this->createRandomAttendance($member->id, $i);
+            // 勤務外データ
+            if ($status === '勤務外') {
+                Attendance::create([
+                    'member_id' => $memberId,
+                    'work_date' => $workDate,
+                    'clock_in' => null,
+                    'clock_end' => null,
+                    'status' => $status,
+                    'remarks' => '勤務外ダミーデータ',
+                ]);
+                continue;
+            }
+
+            // 出勤データの作成
+            $clockIn = Carbon::createFromTime(rand(7, 12), rand(0, 59)); // 出勤時間
+            $attendance = Attendance::create([
+                'member_id' => $memberId,
+                'work_date' => $workDate,
+                'clock_in' => $clockIn->format('H:i:s'),
+                'clock_end' => null,
+                'status' => '出勤中',
+                'remarks' => '出勤中ダミーデータ',
+            ]);
+
+            // ステータスごとの処理
+            switch ($memberId) {
+                case 2:
+                    // 通常の出勤中
+                    break;
+
+                case 3:
+                    // 1回目の休憩中
+                    $this->startBreakTime($attendance, $clockIn, '1回目の休憩中');
+                    break;
+
+                case 4:
+                    // 1回目の休憩後の出勤中
+                    $break = $this->startBreakTime($attendance, $clockIn, '1回目の休憩中');
+                    $this->endBreakTime($attendance, $break);
+                    $attendance->update([
+                        'status' => '出勤中',
+                        'remarks' => '1回目の休憩後出勤ダミーデータ'
+                    ]);
+                    break;
+
+                case 5:
+                    // 2回目の休憩中
+                    $break1 = $this->startBreakTime($attendance, $clockIn, '1回目の休憩中');
+                    $this->endBreakTime($attendance, $break1);
+                    $this->startBreakTime($attendance, $break1->break_time_end, '2回目の休憩中');
+                    break;
+
+                case 6:
+                    // 2回目の休憩後の出勤中
+                    $break1 = $this->startBreakTime($attendance, $clockIn, '1回目の休憩中');
+                    $this->endBreakTime($attendance, $break1);
+                    $break2 = $this->startBreakTime($attendance, $break1->break_time_end, '2回目の休憩中');
+                    $this->endBreakTime($attendance, $break2);
+                    break;
+
+                case 7:
+                    // 退勤済
+                    $workDuration = rand(120, 300); // 2〜5時間
+                    $this->safeClockOut($attendance, $clockIn, $workDuration);
+                    break;
+
+                case 8:
+                    // 1回の休憩を取り退勤
+                    $break = $this->startBreakTime($attendance, $clockIn, '1回目の休憩中');
+                    $this->endBreakTime($attendance, $break);
+
+                    $attendance->update([
+                        'status' => '出勤中',
+                        'remarks' => '1回目の休憩後出勤中ダミーデータ'
+                    ]);
+
+                    $workDuration = rand(300, 540); // 5〜9時間
+                    $this->safeClockOut($attendance, $clockIn, $workDuration);
+                    break;
+
+                case 9:
+                    // 2回の休憩を取り退勤
+                    $break1 = $this->startBreakTime($attendance, $clockIn, '1回目の休憩中');
+                    $this->endBreakTime($attendance, $break1);
+
+                    $attendance->update([
+                        'status' => '出勤中',
+                        'remarks' => '1回目の休憩後出勤ダミーデータ'
+                    ]);
+
+                    $break2 = $this->startBreakTime($attendance, $break1->break_time_end, '2回目の休憩中');
+                    $this->endBreakTime($attendance, $break2);
+
+                    $attendance->update([
+                        'status' => '出勤中',
+                        'remarks' => '2回目の休憩後出勤ダミーデータ'
+                    ]);
+
+                    $workDuration = rand(480, 600); // 8〜10時間
+                    $this->safeClockOut($attendance, $clockIn, $workDuration);
+                    break;
             }
         }
     }
 
-    private function createAttendance($memberId, $status, $workMinutes)
+    // 休憩開始
+    private function startBreakTime($attendance, $start, $breakLabel)
     {
-        $workDate = Carbon::now()->subDays(1);
-        $clockIn = $workMinutes > 0 ? Carbon::createFromTime(9, 0) : null;
-        $clockEnd = $clockIn ? (clone $clockIn)->addMinutes($workMinutes) : null;
+        $breakStart = is_string($start)
+            ? Carbon::parse($start)->addMinutes(rand(120, 180))
+            : (clone $start)->addMinutes(rand(120, 180));
 
-        $attendance = Attendance::create([
-            'member_id' => $memberId,
-            'work_date' => $workDate->format('Y-m-d'),
-            'clock_in' => $clockIn ? $clockIn->format('H:i:s') : null,
-            'clock_end' => ($status === '退勤済' && $clockEnd) ? $clockEnd->format('H:i:s') : null,
-            'status' => $status,
-            'remarks' => $status . 'ダミーデータ',
+        $break = BreakTime::create([
+            'attendance_id' => $attendance->id,
+            'break_time_start' => $breakStart->format('H:i:s'),
+            'break_time_end' => null,
         ]);
 
-        return $attendance;
+        // 休憩中に更新
+        $attendance->update([
+            'status' => '休憩中',
+            'remarks' => $breakLabel . 'ダミーデータ'
+        ]);
+
+        return $break; // 休憩終了時間を返す
     }
 
-    private function createBreakTimeStatus($memberId, $status, $elapsedMinutes)
+    // 休憩終了
+    private function endBreakTime($attendance, $break)
     {
-        $attendance = $this->createAttendance($memberId, $status, $elapsedMinutes);
+        $breakEnd = Carbon::parse($break->break_time_start)->addMinutes(rand(15, 60)); // 15〜60分後に終了
 
-        if ($attendance->clock_in) {
-            $breakStart = Carbon::parse($attendance->clock_in)->addMinutes($elapsedMinutes - 30);
-            $breakEnd = (clone $breakStart)->addMinutes(30); // 30分の休憩
+        $break->update([
+            'break_time_end' => $breakEnd->format('H:i:s')
+        ]);
 
-            BreakTime::create([
-                'attendance_id' => $attendance->id,
-                'break_time_start' => $breakStart->format('H:i:s'),
-                'break_time_end' => $breakEnd->format('H:i:s'),
-            ]);
-
-            $attendance->update([
-                'status' => $status,
-                'remarks' => '休憩中ダミーデータ',
-            ]);
-        }
+        $attendance->update([
+            'status' => '出勤中',
+            'remarks' => '休憩後出勤ダミーデータ'
+        ]);
     }
 
-    private function createRandomAttendance($memberId, $id)
+    // 出勤中のときのみ退勤可
+    private function safeClockOut($attendance, $clockIn, $workDuration)
     {
-        $statuses = ['勤務外', '出勤中', '休憩中', '退勤済']; // ランダムなステータス
-        $status = $statuses[array_rand($statuses)];
-        $workMinutes = $status === '勤務外' ? 0 : rand(1, 480); // 勤務外は0分、それ以外は1〜480分
-
-        $attendance = $this->createAttendance($memberId, $status, $workMinutes);
-
-        if ($status === '休憩中' && $attendance->clock_in) {
-            // 休憩中の場合は休憩時間も作成
-            $breakStart = Carbon::parse($attendance->clock_in)->addMinutes(rand(60, max(61, $workMinutes - 30)));
-            $breakEnd = (clone $breakStart)->addMinutes(rand(15, 60)); // 15〜60分の休憩
-
-            BreakTime::create([
-                'attendance_id' => $attendance->id,
-                'break_time_start' => $breakStart->format('H:i:s'),
-                'break_time_end' => $breakEnd->format('H:i:s'),
-            ]);
-
-            $attendance->update([
-                'status' => '休憩中',
-                'remarks' => '休憩中ダミーデータ',
-            ]);
+        if ($attendance->status !== '出勤中') {
+            // 出勤中以外の場合は退勤できない
+            throw new Exception("メンバーID {$attendance->member_id} は「出勤中」ではないため退勤できません。");
         }
+
+        $clockOut = (clone $clockIn)->addMinutes($workDuration);
+        $attendance->update([
+            'clock_end' => $clockOut->format('H:i:s'),
+            'status' => '退勤済',
+            'remarks' => '退勤ダミーデータ'
+        ]);
     }
 }
