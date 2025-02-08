@@ -13,18 +13,16 @@ class MembersTableSeeder extends Seeder
      */
     public function run(): void
     {
-        $param = [
-            'name' => 'スタッフ1',
-            'email' => 'staff1@test.com',
-            'password' => 'password',
+        $members = [
+            ['name' => 'スタッフ1', 'email' => 'staff1@test.com', 'password' => 'password'],
+            ['name' => 'スタッフ2', 'email' => 'staff2@test.com', 'password' => 'password'],
+            ['name' => 'スタッフ3', 'email' => 'staff3@test.com', 'password' => 'password'],
+            ['name' => 'スタッフ4', 'email' => 'staff4@test.com', 'password' => 'password'],
+            ['name' => 'スタッフ5', 'email' => 'staff5@test.com', 'password' => 'password'],
         ];
-        Member::create($param);
 
-        $param = [
-            'name' => 'スタッフ2',
-            'email' => 'staff2@test.com',
-            'password' => 'password',
-        ];
-        Member::create($param);
+        foreach ($members as $member) {
+            Member::create($member);
+        }
     }
 }
