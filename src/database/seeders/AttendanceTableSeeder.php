@@ -5,10 +5,8 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\Attendance;
 use App\Models\BreakTime;
-use App\Models\Member;
 use Carbon\Carbon;
 use Exception;
-use Illuminate\Support\Facades\DB;
 
 class AttendanceTableSeeder extends Seeder
 {
@@ -73,7 +71,7 @@ class AttendanceTableSeeder extends Seeder
                     $this->endBreakTime($attendance, $break);
                     $attendance->update([
                         'status' => '出勤中',
-                        'remarks' => '1回目の休憩後出勤ダミーデータ'
+                        'remarks' => '1回目の休憩後出勤中ダミーデータ'
                     ]);
                     break;
 
@@ -98,7 +96,7 @@ class AttendanceTableSeeder extends Seeder
                     $this->endBreakTime($attendance, $break2);
                     $attendance->update([
                         'status' => '出勤中',
-                        'remarks' => '2回目の休憩後出勤ダミーデータ'
+                        'remarks' => '2回目の休憩後出勤中ダミーデータ'
                     ]);
                     break;
 
@@ -107,6 +105,11 @@ class AttendanceTableSeeder extends Seeder
                     $workDuration = rand(120, 300); // 2〜5時間
                     $this->safeClockOut($attendance, $clockIn, $workDuration);
                     break;
+
+                    $attendance->update([
+                        // 'status' => '出勤中',
+                        'remarks' => '休憩なしで退勤済ダミーデータ'
+                    ]);
 
                 case 8:
                     // 1回の休憩を取り退勤
@@ -207,7 +210,6 @@ class AttendanceTableSeeder extends Seeder
         $attendance->update([
             'clock_end' => $clockOut->format('H:i:s'),
             'status' => '退勤済',
-            'remarks' => '退勤ダミーデータ'
         ]);
     }
 }
