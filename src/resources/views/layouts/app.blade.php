@@ -15,46 +15,32 @@
         <div class="header">
         {{-- ロゴ表示 --}}
             <div class="header-left">
-                <a href="{{ route('home') }}">
-                    <img class="header__logo" src="{{ asset('storage/app/logo.svg') }}" alt="ロゴ" />
-                </a>
+                {{-- <a href="{{ route('home') }}"> --}}
+                    <img class="header__logo" src="{{ asset('storage/logo.svg') }}" alt="ロゴ" />
+                {{-- </a> --}}
             </div>
 
             {{-- ログイン・会員登録画面では非表示 --}}
             @if (!request()->is('register') && !request()->is('login'))
                 <div class="header-center">
-                    {{-- 検索フォーム --}}
-                    <form action="{{ route('search') }}" method="GET" class="header__search">
-                        <input
-                            type="text"
-                            name="query"
-                            value="{{ request('query') }}"
-                            placeholder="なにをお探しですか？"
-                            class="header__search-input"
-                        />
-                    </form>
                 </div>
             @endif
 
     {{-- ボタンコンテナ --}}
             @if (!request()->is('register') && !request()->is('login'))
                 <div class="header-right">
-            {{-- ログイン・ログアウトボタン --}}
-                    @if (Auth::check())
-                        <form action="{{ route('logout') }}" method="POST" class="header__logout">
-                            @csrf
-                            <button type="submit" class="header__logout-button">ログアウト</button>
-                        </form>
-                    @else
-                        <form action="{{ route('show.login') }}" method="GET" class="header__login">
-                            @csrf
-                            <button type="submit" class="header__login-button">ログイン</button>
-                        </form>
-                    @endif
-            {{-- マイページボタン --}}
-                    <button class="header__mypage-button"><a href="{{ route('profile.mypage') }}">マイページ</a></button>
-            {{-- 出品ボタン --}}
-                    <button class="header__sell-button"><a href="{{ route('sell') }}">出品</a></button>
+            {{-- 勤怠ボタン --}}
+                    <button>勤怠</button>
+                    {{-- <button class="header__mypage-button"><a href="{{ route('profile.mypage') }}">マイページ</a></button> --}}
+            {{-- 勤怠一覧ボタン --}}
+                    <button>勤怠一覧</button>
+                    {{-- <button class="header__sell-button"><a href="{{ route('sell') }}">出品</a></button> --}}
+            {{-- ログアウトボタン --}}
+                    <button>ログアウト</button>
+                    {{-- <form action="{{ route('logout') }}" method="POST" class="header__logout">
+                        @csrf
+                        <button type="submit" class="header__logout-button">ログアウト</button>
+                    </form> --}}
                 </div>
             @endif
         </div>
