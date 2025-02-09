@@ -12,10 +12,10 @@
     @csrf
 {{-- ユーザー名 --}}
         <div class="form__group">
-            <label for="username">ユーザー名</label>
-            <input type="text" name="username" value="{{ old('username') }}" class="form__group-input" />
+            <label for="name">名前</label>
+            <input type="text" name="name" value="{{ old('name') }}" class="form__group-input" />
             <div class="error-message">
-                @error('username')
+                @error('name')
                     {{ $message }}
                 @enderror
             </div>
@@ -40,9 +40,9 @@
                 @enderror
             </div>
         </div>
-{{-- 確認用パスワード --}}
+{{-- パスワード確認 --}}
         <div class="form__group">
-            <label for="password_confirmation">確認用パスワード</label>
+            <label for="password_confirmation">パスワード確認</label>
             <input type="password" name="password_confirmation" class="form__group-input" />
             <div class="error-message">
                 @error('password_confirmation')
@@ -51,7 +51,7 @@
             </div>
         </div>
 {{-- 登録ボタン --}}
-        <button class="register-form__button form__red-button">登録する</button>
+        <button class="register-form__button form__black-button">登録する</button>
     </form>
 {{-- ログイン案内 --}}
     <a href="/login" class="login-link blue-button">ログインはこちら</a>
