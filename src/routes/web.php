@@ -1,21 +1,15 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\MemberAuthController;
 
-/*
-|--------------------------------------------------------------------------
-| Web Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "web" middleware group. Make something great!
-|
-*/
+// 会員登録画面
+Route::get('/register', [MemberAuthController::class, 'showRegistrationForm'])->withoutMiddleware(['auth'])->name('register.show');
+Route::post('/register', [MemberAuthController::class, 'register'])->withoutMiddleware(['auth'])->name('register');
+// ログイン画面
+Route::get('/login', [MemberAuthController::class, 'showLoginForm'])->name('show.login');
+Route::post('/login', [MemberAuthController::class, 'login'])->name('login');
 
-Route::get('/register', function () {
-    return view('member.register');
-});
 // Route::middleware('auth')->group(function () {
 //     Route::get('/', [***Controller::class, 'index']);
 // });
