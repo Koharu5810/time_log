@@ -13,6 +13,7 @@ html {
     align-items: center;  /* 垂直位置 中央揃え */
     justify-content: space-between;  /* 水平方向 両端揃え */
     box-sizing: border-box;
+    border: 3px solid pink;
 }
 .header-left,
 .header-center,
@@ -32,6 +33,7 @@ html {
     max-width: 100%;
     height: auto;
     display: block;
+    border: 1px solid orange;
 }
 
 /* ボタン類 */
@@ -77,6 +79,7 @@ main {
     padding-top: 50px;
     display: flex;
     justify-content: center;
+    border: 1px solid yellow;
 }
 /* 入力フォーム・グループ */
 .form__group {
