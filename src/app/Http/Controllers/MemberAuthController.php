@@ -15,18 +15,20 @@ class MemberAuthController extends Controller
     }
 // 会員登録処理
     // public function register(RegisterRequest $request) {
-    //     $user = Member::create([
-    //         'name' => $request->name,
-    //         'email' => $request->email,
-    //         'password' => Hash::make($request->password),
-    //     ]);
+    public function register(Request $request) {
+        $user = Member::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+        ]);
 
-    //     event(new Registered($user));
-    //     // 登録直後にログイン状態にする
-    //     auth()->login($user);
+        event(new Registered($user));
+        // 登録直後にログイン状態にする
+        auth()->login($user);
 
-    //     return redirect()->route('profile.edit');
-    // }
+        return redirect();
+        // return redirect()->route('profile.edit');
+    }
 
 // ログイン画面表示
     public function showLoginForm() {
